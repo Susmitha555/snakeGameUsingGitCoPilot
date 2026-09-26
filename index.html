@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1d32">
+  <title>Snake Game</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #0b1d32;
+      --panel: #122b47;
+      --panel-light: #1a3a5c;
+      --paper: #e9f3ff;
+      --muted: #a9bfd5;
+      --blue: #62b8ff;
+      --red: #ff6573;
+      --line: rgba(233, 243, 255, .15);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      padding: 28px 18px;
+      color: var(--paper);
+      background-color: var(--ink);
+      background-image: radial-gradient(rgba(98, 184, 255, .14) .7px, transparent .7px);
+      background-size: 18px 18px;
+      font-family: "Courier New", Courier, monospace;
+    }
+
+    button { font: inherit; }
+
+    .game-shell {
+      width: min(100%, 940px);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 250px;
+      gap: 22px;
+      align-items: start;
+      animation: arrive .45s ease-out both;
+    }
+
+    .game-main { min-width: 0; }
+
+    .masthead {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      margin: 0 0 14px;
+    }
+
+    .eyebrow, .side-label {
+      margin: 0;
+      color: var(--blue);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 5px 0 0;
+      font-size: clamp(28px, 6vw, 48px);
+      line-height: .95;
+      letter-spacing: 0;
+    }
+
+    .round-tag {
+      flex: none;
+      padding: 7px 9px;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .scorebar {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 15px;
+      border: 1px solid var(--line);
+      border-bottom: 0;
+      background: var(--panel);
+    }
+
+    .score-unit { display: grid; gap: 4px; }
+    .score-name { color: var(--muted); font-size: 10px; text-transform: uppercase; }
+    .score-value { color: var(--blue); font-size: 23px; font-weight: 700; line-height: 1; }
+
+    .board-wrap {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--paper);
+      aspect-ratio: 1;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+    }
+
+    .board-message {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      gap: 12px;
+      padding: 24px;
+      background: rgba(11, 29, 50, .86);
+      text-align: center;
+    }
+
+    .board-message[hidden] { display: none; }
+
+    .message-title {
+      margin: 0;
+      color: var(--blue);
+      font-size: clamp(24px, 5vw, 38px);
+      font-weight: 700;
+    }
+
+    .message-copy { max-width: 29ch; margin: 0; color: var(--paper); line-height: 1.5; }
+
+    .button {
+      min-height: 42px;
+      padding: 0 15px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      font-weight: 700;
+      transition: transform .12s ease, background-color .12s ease;
+    }
+
+    .button:hover { transform: translateY(-2px); }
+    .button:focus-visible, .direction-button:focus-visible { outline: 3px solid var(--red); outline-offset: 3px; }
+    .button-primary { color: var(--ink); background: var(--blue); }
+    .button-primary:hover { background: #8dccff; }
+    .button-quiet { color: var(--paper); border-color: var(--line); background: transparent; }
+    .button-quiet:hover { background: var(--panel-light); }
+
+    .below-board {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding-top: 12px;
+    }
+
+    .status { min-height: 1.2em; margin: 0; color: var(--muted); font-size: 12px; }
+    .action-row { display: flex; gap: 8px; }
+
+    .side-panel {
+      display: grid;
+      gap: 12px;
+      padding-top: 54px;
+    }
+
+    .side-section {
+      padding: 16px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+
+    .side-label { margin-bottom: 12px; }
+    .side-copy { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
+    .key-row { display: flex; gap: 5px; margin-top: 12px; }
+
+    kbd {
+      min-width: 28px;
+      padding: 5px 7px;
+      border: 1px solid var(--line);
+      color: var(--paper);
+      background: var(--panel-light);
+      font: inherit;
+      font-size: 11px;
+      text-align: center;
+    }
+
+    .touch-controls {
+      display: none;
+      grid-template-columns: repeat(3, 48px);
+      grid-template-rows: repeat(2, 44px);
+      justify-content: center;
+      gap: 5px;
+      margin-top: 14px;
+    }
+
+    .direction-button {
+      border: 1px solid var(--line);
+      color: var(--blue);
+      background: var(--panel-light);
+      font-size: 19px;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .direction-button[data-direction="up"] { grid-column: 2; grid-row: 1; }
+    .direction-button[data-direction="left"] { grid-column: 1; grid-row: 2; }
+    .direction-button[data-direction="down"] { grid-column: 2; grid-row: 2; }
+    .direction-button[data-direction="right"] { grid-column: 3; grid-row: 2; }
+
+    .footer-note { color: var(--muted); font-size: 10px; line-height: 1.6; }
+
+    @keyframes arrive {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 700px) {
+      body { padding: 18px 14px 28px; }
+      .game-shell { width: min(100%, 520px); grid-template-columns: 1fr; gap: 14px; }
+      .side-panel { padding-top: 0; grid-template-columns: 1fr; }
+      .side-section { padding: 13px 15px; }
+      .side-section.controls-copy { display: none; }
+      .touch-controls { display: grid; }
+      .round-tag { align-self: center; }
+      .below-board { align-items: start; }
+      .action-row .button { min-height: 38px; padding: 0 10px; font-size: 12px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="game-shell">
+    <section class="game-main" aria-labelledby="game-title">
+      <header class="masthead">
+        <div>
+          <p class="eyebrow">Arcade / 001</p>
+          <h1 id="game-title">SNAKE</h1>
+        </div>
+        <span class="round-tag">CLASSIC MODE</span>
+      </header>
+
+      <div class="scorebar" aria-label="Scoreboard">
+        <div class="score-unit"><span class="score-name">Score</span><output id="score" class="score-value">000</output></div>
+        <div class="score-unit" style="text-align: right"><span class="score-name">Best</span><output id="best" class="score-value">000</output></div>
+      </div>
+
+      <div class="board-wrap">
+        <canvas id="board" width="400" height="400" role="img" aria-label="Snake game board"></canvas>
+        <div id="board-message" class="board-message">
+          <p id="message-title" class="message-title">Ready?</p>
+          <p id="message-copy" class="message-copy">Eat the fruit. Keep moving. Don't bite your own tail.</p>
+          <button id="start-button" class="button button-primary" type="button">Start game</button>
+        </div>
+      </div>
+
+      <div class="below-board">
+        <p id="status" class="status" aria-live="polite">Press an arrow key or start to play.</p>
+        <div class="action-row">
+          <button id="pause-button" class="button button-quiet" type="button" aria-pressed="false">Pause</button>
+          <button id="restart-button" class="button button-quiet" type="button">Restart</button>
+        </div>
+      </div>
+    </section>
+
+    <aside class="side-panel" aria-label="Game information">
+      <section class="side-section controls-copy">
+        <p class="side-label">Controls</p>
+        <p class="side-copy">Steer with the arrow keys or WASD. Space pauses the game.</p>
+        <div class="key-row" aria-hidden="true"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><kbd>SPACE</kbd></div>
+      </section>
+      <section class="side-section">
+        <p class="side-label">The rules</p>
+        <p class="side-copy">Each fruit adds 10 points and makes the snake a little quicker. The run ends if you hit a wall or yourself.</p>
+        <div class="touch-controls" aria-label="Touch direction controls">
+          <button class="direction-button" type="button" data-direction="up" aria-label="Move up">↑</button>
+          <button class="direction-button" type="button" data-direction="left" aria-label="Move left">←</button>
+          <button class="direction-button" type="button" data-direction="down" aria-label="Move down">↓</button>
+          <button class="direction-button" type="button" data-direction="right" aria-label="Move right">→</button>
+        </div>
+      </section>
+      <p class="footer-note">A tiny browser arcade. Your best score stays on this device.</p>
+    </aside>
+  </main>
+  <script src="game.js" defer></script>
+</body>
+</html>
