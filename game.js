@@ -15,7 +15,7 @@ const restartButton = document.querySelector("#restart-button");
 const cellSize = 20;
 const cellCount = canvas.width / cellSize;
 const speedByLevel = [185, 135, 95];
-const levelGoals = [100, 500, 1000];
+const levelGoals = [100, 300, 500];
 const directions = {
   up: { x: 0, y: -1 },
   right: { x: 1, y: 0 },
@@ -174,15 +174,22 @@ function step() {
       levelOutput.value = String(level);
       goalOutput.value = "WIN";
       state = "over";
-      showMessage("You win!", "1,000 points. You cleared all three levels!", "Play again");
+      showMessage("You win!", "500 points. You cleared all three levels!", "Play again");
       statusText.textContent = "Winner! All three levels completed.";
       pauseButton.textContent = "Pause";
       pauseButton.setAttribute("aria-pressed", "false");
     } else if (nextLevel > level) {
+      const completedLevel = level;
       level = nextLevel;
       levelOutput.value = String(level);
       goalOutput.value = String(levelGoals[level - 1]);
-      statusText.textContent = `Level ${level} unlocked. Target: ${levelGoals[level - 1]}.`;
+      state = "levelComplete";
+      showMessage(
+        `Congratulations!`,
+        `Level ${completedLevel} completed! Please continue to Level ${level}.`,
+        `Continue to Level ${level}`,
+      );
+      statusText.textContent = `Level ${completedLevel} complete. Continue when you're ready.`;
     } else {
       statusText.textContent = `${levelGoals[level - 1] - score} points to finish Level ${level}.`;
     }
