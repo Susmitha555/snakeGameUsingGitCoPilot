@@ -3,33 +3,37 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0b1d32">
+  <meta name="theme-color" content="#dcefff">
   <title>Snake Game</title>
   <style>
     :root {
-      color-scheme: dark;
-      --ink: #0b1d32;
-      --panel: #122b47;
-      --panel-light: #1a3a5c;
-      --paper: #e9f3ff;
-      --muted: #a9bfd5;
-      --blue: #62b8ff;
-      --red: #ff6573;
-      --line: rgba(233, 243, 255, .15);
+      color-scheme: light;
+      --ink: #123b5d;
+      --panel: #c6e4ff;
+      --panel-light: #e1f1ff;
+      --paper: #f4faff;
+      --muted: #416783;
+      --blue: #1269aa;
+      --blue-light: #a8d6ff;
+      --red: #eb5365;
+      --line: rgba(18, 59, 93, .2);
     }
 
     * { box-sizing: border-box; }
 
     body {
       min-width: 320px;
-      min-height: 100vh;
+      height: 100vh;
+      height: 100dvh;
+      min-height: 0;
       margin: 0;
       display: grid;
       place-items: center;
-      padding: 28px 18px;
-      color: var(--paper);
-      background-color: var(--ink);
-      background-image: radial-gradient(rgba(98, 184, 255, .14) .7px, transparent .7px);
+      overflow: hidden;
+      padding: 14px 18px;
+      color: var(--ink);
+      background-color: #dcefff;
+      background-image: radial-gradient(rgba(18, 105, 170, .14) .7px, transparent .7px);
       background-size: 18px 18px;
       font-family: "Courier New", Courier, monospace;
     }
@@ -38,14 +42,28 @@
 
     .game-shell {
       width: min(100%, 940px);
+      height: auto;
+      max-height: 100%;
       display: grid;
       grid-template-columns: minmax(0, 1fr) 250px;
-      gap: 22px;
-      align-items: start;
+      grid-template-areas: "game details";
+      gap: 12px;
+      align-items: stretch;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #c6e4ff;
+      box-shadow: 0 16px 40px rgba(18, 59, 93, .12);
       animation: arrive .45s ease-out both;
     }
 
-    .game-main { min-width: 0; }
+    .game-main {
+      grid-area: game;
+      min-width: 0;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+    }
 
     .masthead {
       display: flex;
@@ -82,22 +100,30 @@
     .scorebar {
       display: flex;
       justify-content: space-between;
-      gap: 12px;
-      padding: 12px 15px;
+      align-items: center;
+      gap: 0;
+      padding: 10px 12px;
       border: 1px solid var(--line);
-      border-bottom: 0;
-      background: var(--panel);
+      border-radius: 10px;
+      background: var(--paper);
     }
 
-    .score-unit { display: grid; gap: 4px; }
+    .score-unit { display: grid; flex: 1; gap: 4px; }
+    .score-unit + .score-unit { padding-left: 10px; border-left: 1px solid var(--line); }
     .score-name { color: var(--muted); font-size: 10px; text-transform: uppercase; }
     .score-value { color: var(--blue); font-size: 23px; font-weight: 700; line-height: 1; }
+    .score-unit:nth-child(3) .score-value { color: #aa293f; }
 
     .board-wrap {
       position: relative;
       overflow: hidden;
+      width: min(100%, calc(100dvh - 248px));
+      max-height: 100%;
+      align-self: center;
       border: 1px solid var(--line);
+      border-radius: 12px;
       background: var(--paper);
+      box-shadow: 0 8px 22px rgba(18, 59, 93, .1);
       aspect-ratio: 1;
     }
 
@@ -116,7 +142,7 @@
       justify-items: center;
       gap: 12px;
       padding: 24px;
-      background: rgba(11, 29, 50, .86);
+      background: rgba(18, 59, 93, .92);
       text-align: center;
     }
 
@@ -124,10 +150,12 @@
 
     .message-title {
       margin: 0;
-      color: var(--blue);
+      color: var(--blue-light);
       font-size: clamp(24px, 5vw, 38px);
       font-weight: 700;
     }
+
+    .message-title.is-winner { color: #ff8792; }
 
     .message-copy { max-width: 29ch; margin: 0; color: var(--paper); line-height: 1.5; }
 
@@ -135,16 +163,18 @@
       min-height: 42px;
       padding: 0 15px;
       border: 1px solid transparent;
+      border-radius: 8px;
       cursor: pointer;
       font-weight: 700;
       transition: transform .12s ease, background-color .12s ease;
     }
 
     .button:hover { transform: translateY(-2px); }
+    .button:active { transform: scale(.97); }
     .button:focus-visible, .direction-button:focus-visible { outline: 3px solid var(--red); outline-offset: 3px; }
-    .button-primary { color: var(--ink); background: var(--blue); }
-    .button-primary:hover { background: #8dccff; }
-    .button-quiet { color: var(--paper); border-color: var(--line); background: transparent; }
+    .button-primary { color: #ffffff; background: var(--blue); }
+    .button-primary:hover { background: #318ad0; }
+    .button-quiet { color: var(--ink); border-color: var(--line); background: var(--panel-light); }
     .button-quiet:hover { background: var(--panel-light); }
 
     .below-board {
@@ -159,15 +189,20 @@
     .action-row { display: flex; gap: 8px; }
 
     .side-panel {
+      grid-area: details;
       display: grid;
-      gap: 12px;
-      padding-top: 54px;
+      align-content: start;
+      align-items: stretch;
+      align-self: center;
+      gap: 8px;
     }
 
     .side-section {
+      width: 100%;
       padding: 16px;
       border: 1px solid var(--line);
-      background: var(--panel);
+      border-radius: 10px;
+      background: var(--paper);
     }
 
     .side-label { margin-bottom: 12px; }
@@ -178,8 +213,9 @@
       min-width: 28px;
       padding: 5px 7px;
       border: 1px solid var(--line);
-      color: var(--paper);
+      color: var(--ink);
       background: var(--panel-light);
+      border-radius: 4px;
       font: inherit;
       font-size: 11px;
       text-align: center;
@@ -198,6 +234,7 @@
       border: 1px solid var(--line);
       color: var(--blue);
       background: var(--panel-light);
+      border-radius: 8px;
       font-size: 19px;
       cursor: pointer;
       touch-action: manipulation;
@@ -216,15 +253,55 @@
     }
 
     @media (max-width: 700px) {
-      body { padding: 18px 14px 28px; }
-      .game-shell { width: min(100%, 520px); grid-template-columns: 1fr; gap: 14px; }
-      .side-panel { padding-top: 0; grid-template-columns: 1fr; }
-      .side-section { padding: 13px 15px; }
-      .side-section.controls-copy { display: none; }
-      .touch-controls { display: grid; }
+      body { padding: 6px 12px; }
+      .game-shell {
+        width: min(100%, 520px);
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: minmax(0, 1fr) auto;
+        grid-template-areas: "game" "details";
+        gap: 5px;
+        padding: 8px;
+      }
+      .masthead { margin-bottom: 6px; }
+      h1 { font-size: 30px; }
+      .scorebar { padding: 7px 8px; }
+      .score-unit + .score-unit { padding-left: 5px; }
+      .score-value { font-size: 20px; }
+      .board-wrap { width: min(100%, calc(100dvh - 326px)); }
+      .below-board { padding-top: 6px; gap: 4px; align-items: center; }
+      .status { width: 11ch; flex: none; font-size: 10px; }
+      .action-row { gap: 4px; }
+      .side-panel {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 4px;
+        padding-top: 0;
+      }
+      .side-section { padding: 4px 8px; }
+      .controls-copy { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 8px; }
+      .controls-copy .side-label { margin: 0; }
+      .controls-copy .side-copy { font-size: 10px; line-height: 1.3; }
+      .controls-copy .key-row, .footer-note { display: none; }
+      .touch-section {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 108px;
+        align-items: center;
+        gap: 6px;
+      }
+      .touch-section .side-label { margin: 0; }
+      .touch-section .side-copy { font-size: 10px; line-height: 1.3; }
+      .touch-controls {
+        display: grid;
+        grid-column: 2;
+        grid-row: 1 / span 2;
+        grid-template-columns: repeat(3, 32px);
+        grid-template-rows: repeat(2, 28px);
+        gap: 4px;
+        margin: 0;
+      }
+      .direction-button { font-size: 16px; }
       .round-tag { align-self: center; }
-      .below-board { align-items: start; }
-      .action-row .button { min-height: 38px; padding: 0 10px; font-size: 12px; }
+      .action-row .button { min-height: 34px; padding: 0 7px; font-size: 10px; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -245,6 +322,8 @@
 
       <div class="scorebar" aria-label="Scoreboard">
         <div class="score-unit"><span class="score-name">Score</span><output id="score" class="score-value">000</output></div>
+        <div class="score-unit" style="text-align: center"><span class="score-name">Level</span><output id="level" class="score-value">1</output></div>
+        <div class="score-unit" style="text-align: center"><span class="score-name">Target</span><output id="goal" class="score-value">100</output></div>
         <div class="score-unit" style="text-align: right"><span class="score-name">Best</span><output id="best" class="score-value">000</output></div>
       </div>
 
@@ -252,7 +331,7 @@
         <canvas id="board" width="400" height="400" role="img" aria-label="Snake game board"></canvas>
         <div id="board-message" class="board-message">
           <p id="message-title" class="message-title">Ready?</p>
-          <p id="message-copy" class="message-copy">Eat the fruit. Keep moving. Don't bite your own tail.</p>
+          <p id="message-copy" class="message-copy">Catch the fruit. The walls wrap around, but your tail doesn't!</p>
           <button id="start-button" class="button button-primary" type="button">Start game</button>
         </div>
       </div>
@@ -272,9 +351,9 @@
         <p class="side-copy">Steer with the arrow keys or WASD. Space pauses the game.</p>
         <div class="key-row" aria-hidden="true"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><kbd>SPACE</kbd></div>
       </section>
-      <section class="side-section">
+      <section class="side-section touch-section">
         <p class="side-label">The rules</p>
-        <p class="side-copy">Each fruit adds 10 points and makes the snake a little quicker. The run ends if you hit a wall or yourself.</p>
+        <p class="side-copy">Walls wrap around; your tail still ends the run. Level targets: 100, 500, then 1,000 points to win.</p>
         <div class="touch-controls" aria-label="Touch direction controls">
           <button class="direction-button" type="button" data-direction="up" aria-label="Move up">↑</button>
           <button class="direction-button" type="button" data-direction="left" aria-label="Move left">←</button>
@@ -285,6 +364,6 @@
       <p class="footer-note">A tiny browser arcade. Your best score stays on this device.</p>
     </aside>
   </main>
-  <script src="game.js" defer></script>
+  <script src="game.js?v=2" defer></script>
 </body>
 </html>

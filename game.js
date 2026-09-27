@@ -2,6 +2,8 @@ const canvas = document.querySelector("#board");
 const context = canvas.getContext("2d");
 const scoreOutput = document.querySelector("#score");
 const bestOutput = document.querySelector("#best");
+const levelOutput = document.querySelector("#level");
+const goalOutput = document.querySelector("#goal");
 const statusText = document.querySelector("#status");
 const message = document.querySelector("#board-message");
 const messageTitle = document.querySelector("#message-title");
@@ -12,7 +14,8 @@ const restartButton = document.querySelector("#restart-button");
 
 const cellSize = 20;
 const cellCount = canvas.width / cellSize;
-const startSpeed = 135;
+const speedByLevel = [185, 135, 95];
+const levelGoals = [100, 500, 1000];
 const directions = {
   up: { x: 0, y: -1 },
   right: { x: 1, y: 0 },
@@ -25,6 +28,7 @@ let direction;
 let queuedDirection;
 let food;
 let score;
+let level = 1;
 let best = readBest();
 let state = "ready";
 let lastFrame = 0;
@@ -45,9 +49,9 @@ function setScore(value) {
   if (increased && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
     scoreOutput.animate(
       [
-        { transform: "scale(1)", color: "#62b8ff" },
-        { transform: "scale(1.2)", color: "#ff6573", offset: 0.55 },
-        { transform: "scale(1)", color: "#62b8ff" },
+        { transform: "scale(1)", color: "#1978c9" },
+        { transform: "scale(1.2)", color: "#eb5365", offset: 0.55 },
+        { transform: "scale(1)", color: "#1978c9" },
       ],
       { duration: 260, easing: "ease-out" },
     );
@@ -74,13 +78,16 @@ function resetGame() {
   direction = directions.right;
   queuedDirection = direction;
   setScore(0);
+  level = 1;
+  levelOutput.value = String(level);
+  goalOutput.value = String(levelGoals[0]);
   food = placeFood();
   elapsed = 0;
   state = "ready";
   pauseButton.textContent = "Pause";
   pauseButton.setAttribute("aria-pressed", "false");
-  showMessage("Ready?", "Eat the fruit. Keep moving. Don't bite your own tail.", "Start game");
-  statusText.textContent = "Press an arrow key or start to play.";
+  showMessage("Ready?", "Catch the fruit. The walls wrap around, but your tail doesn't!", "Start game");
+  statusText.textContent = "Level 1 target: 100 points.";
   draw();
 }
 
@@ -98,6 +105,7 @@ function placeFood() {
 
 function showMessage(title, copy, buttonText) {
   messageTitle.textContent = title;
+  messageTitle.classList.toggle("is-winner", title === "You win!");
   messageCopy.textContent = copy;
   startButton.textContent = buttonText;
   message.hidden = false;
@@ -144,15 +152,14 @@ function finishGame() {
 function step() {
   direction = queuedDirection;
   const head = {
-    x: snake[0].x + direction.x,
-    y: snake[0].y + direction.y,
+    x: (snake[0].x + direction.x + cellCount) % cellCount,
+    y: (snake[0].y + direction.y + cellCount) % cellCount,
   };
   const eatsFood = head.x === food.x && head.y === food.y;
   const bodyToCheck = eatsFood ? snake : snake.slice(0, -1);
-  const hitsWall = head.x < 0 || head.y < 0 || head.x >= cellCount || head.y >= cellCount;
   const hitsSelf = bodyToCheck.some((segment) => segment.x === head.x && segment.y === head.y);
 
-  if (hitsWall || hitsSelf) {
+  if (hitsSelf) {
     finishGame();
     return;
   }
@@ -161,6 +168,24 @@ function step() {
   if (eatsFood) {
     setScore(score + 10);
     updateBest();
+    const nextLevel = score >= levelGoals[1] ? 3 : score >= levelGoals[0] ? 2 : 1;
+    if (score >= levelGoals[2]) {
+      level = 3;
+      levelOutput.value = String(level);
+      goalOutput.value = "WIN";
+      state = "over";
+      showMessage("You win!", "1,000 points. You cleared all three levels!", "Play again");
+      statusText.textContent = "Winner! All three levels completed.";
+      pauseButton.textContent = "Pause";
+      pauseButton.setAttribute("aria-pressed", "false");
+    } else if (nextLevel > level) {
+      level = nextLevel;
+      levelOutput.value = String(level);
+      goalOutput.value = String(levelGoals[level - 1]);
+      statusText.textContent = `Level ${level} unlocked. Target: ${levelGoals[level - 1]}.`;
+    } else {
+      statusText.textContent = `${levelGoals[level - 1] - score} points to finish Level ${level}.`;
+    }
     food = placeFood();
     if (!food) {
       state = "over";
@@ -173,10 +198,10 @@ function step() {
 }
 
 function draw() {
-  context.fillStyle = "#e9f3ff";
+  context.fillStyle = "#f4faff";
   context.fillRect(0, 0, canvas.width, canvas.height);
 
-  context.strokeStyle = "rgba(11, 29, 50, .075)";
+  context.strokeStyle = "rgba(18, 59, 93, .09)";
   context.lineWidth = 1;
   for (let line = 1; line < cellCount; line += 1) {
     const position = line * cellSize + 0.5;
@@ -197,11 +222,11 @@ function draw() {
 function drawFood() {
   const centerX = food.x * cellSize + cellSize / 2;
   const centerY = food.y * cellSize + cellSize / 2;
-  context.fillStyle = "#ff6573";
+  context.fillStyle = "#eb5365";
   context.beginPath();
   context.arc(centerX, centerY + 1, 7, 0, Math.PI * 2);
   context.fill();
-  context.strokeStyle = "#0b1d32";
+  context.strokeStyle = "#123b5d";
   context.lineWidth = 2;
   context.beginPath();
   context.moveTo(centerX, centerY - 6);
@@ -214,11 +239,11 @@ function drawSegment(segment, isHead) {
   const x = segment.x * cellSize + inset;
   const y = segment.y * cellSize + inset;
   const size = cellSize - inset * 2;
-  context.fillStyle = isHead ? "#0b1d32" : "#1682d4";
+  context.fillStyle = isHead ? "#123b5d" : "#278be0";
   context.fillRect(x, y, size, size);
 
   if (!isHead) return;
-  context.fillStyle = "#e9f3ff";
+  context.fillStyle = "#f4faff";
   const eyeOffset = 5;
   if (direction.x !== 0) {
     const eyeX = direction.x > 0 ? x + size - 4 : x + 2;
@@ -234,7 +259,7 @@ function drawSegment(segment, isHead) {
 function frame(timestamp) {
   if (state === "playing") {
     elapsed += Math.min(timestamp - lastFrame, 100);
-    const speed = Math.max(75, startSpeed - Math.floor(score / 50) * 5);
+    const speed = speedByLevel[level - 1];
     while (elapsed >= speed && state === "playing") {
       step();
       elapsed -= speed;
